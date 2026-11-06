@@ -153,15 +153,10 @@ class RBM(nn.Module):
         Returns:
             Sample form `p(v|h_new)`, sample of `p(h|v_old)`.
         """
-        raise NotImplementedError("Implement one step of block Gibbs sampling! This means: 1. Get "
-            "p(h|v) conditioned on the visible input. This class already has a function for that! "
-            "2. Sample random values from a Bernoulli distribution  using those probabilities. "
-            "There is torch.distributions.Bernoulli. Check online docs for usage. 3./4. Repeat the "
-            "same for p(v|h) (USE THE NEW H YOU JUST SAMPLED!) and sample new values for v.")
-        p_h = ...
-        new_h = ...
-        p_v = ...
-        new_v = ...
+        p_h = self.to_hidden_p(visible)
+        new_h = Bernoulli(probs=p_h).sample().to(visible.device)
+        p_v = self.to_visible_p(new_h)
+        new_v = Bernoulli(probs=p_v).sample().to(visible.device)
         return new_v, new_h
 
     def energy(self,

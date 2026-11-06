@@ -63,7 +63,7 @@ class RBMTrainingModule(TrainingModuleBase[RBM]):
         raise NotImplementedError("forward() is not well-defined for RBMs!")
 
     @override
-    def SOMETHING(self,
+    def core_step(self,
                   tag: Literal["train", "val", "test"],
                   batch: tuple[DataBatchFloat, LabelBatch],
                   batch_index: int) -> ScalarFloat:
@@ -78,9 +78,6 @@ class RBMTrainingModule(TrainingModuleBase[RBM]):
         Returns:
             Scalar "Loss" for the batch.
         """
-        raise NotImplementedError("Oh no! This function is not named correctly. Which function do "
-            "we need to implement to get a functioning training loop? Check the base class and/or "
-            "the autoencoder implementation for clues!")
         input_batch, _ = batch
         v_data = torch.flatten(input_batch, start_dim=1)
 
@@ -100,17 +97,12 @@ class RBMTrainingModule(TrainingModuleBase[RBM]):
         # most likely, your sampling is bad (e.g. not enough steps -> use longer chains)
         logits_positive = -self.model.energy(v_data, h_data)
         logits_negative = -self.model.energy(v_new, h_new)
-        raise NotImplementedError("Given the positive/negative phase computed above, what is the "
-            "overall 'loss' to minimize? Recall the derivation from the exercise, where we combined "
-            "both parts into one term (also shown in the associated notebook)!")
-        loss = ...
+        loss = -(logits_positive - logits_negative)
 
-        raise NotImplementedError("We are missing logging of the metrics as well as the appropriate "
-            "return value. How does logging work in our base class and what should be returned? You "
-            "can also check the autoencoder.training implementation to see how it's done there. Be "
-            "sure to use a descriptive name for the loss metric so you can find it in Tensorboard!")
-        return None  # TODO
-
+        self.log_metrics(tag,
+                         {"rbm_pseudo_loss": loss})
+        return loss
+    
     @override
     def predict_step(self,
                      batch: tuple[DataBatchFloat, LabelBatch],
@@ -129,12 +121,9 @@ class RBMTrainingModule(TrainingModuleBase[RBM]):
             Batch of visible data samples to start the chain with.
         """
         if self.chain_mode == "cd":
-            raise NotImplementedError("How are Markov chains started in Contrastive Divergence?")
-            return None
+            return v_data
         elif self.chain_mode == "pcd" and self.previous_v is not None:
-            raise NotImplementedError("How are Markov chains started in *Persistent* Contrastive "
-                "Divergence?")
-            return None
+            return self.previous_v
         else:  # simple OR first PCD step
             return self.model.start_sampler.sample((v_data.shape[0],)).to(v_data.device)
 
