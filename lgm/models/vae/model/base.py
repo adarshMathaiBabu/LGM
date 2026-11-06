@@ -94,6 +94,8 @@ class VAE(Autoencoder):
             "the outputs into multiple CHUNKs? If only torch had functions for that... NOTE that "
             "the self.posterior object has an n_parameters field that could be useful to figure "
             "out how many chunks we need!")
+        # keep in mind this function SHOULD NOT SAMPLE THE CODES!
+        # only return the *distribution parameters*! sampling is handled through the posterior object
         return None
 
     def sample_codes(self,
