@@ -1,6 +1,6 @@
 """This module implements a `LightningModule` for training a basic autoencoder."""
 from collections.abc import Callable
-from typing import Literal, override
+from typing import Generic, Literal, TypeVar, override
 
 import torch
 
@@ -11,7 +11,10 @@ from lgm.utils import rescale_likelihood
 from .model import Autoencoder
 
 
-class AETrainingModule(TrainingModuleBase[Autoencoder]):
+AEType = TypeVar("AEType", bound=Autoencoder)
+
+
+class AETrainingModuleBase(TrainingModuleBase[AEType], Generic[AEType]):
     """Lightning module for a basic Autoencoder.
     
     This is our first fully functional lightning module, and all other models we implement in this
@@ -36,7 +39,7 @@ class AETrainingModule(TrainingModuleBase[Autoencoder]):
     """
     @override
     def __init__(self,
-                 model: Autoencoder,
+                 model: AEType,
                  optimization_config: OptimizationConfig,
                  scale_multiplier: float = 256.,
                  reconstruction_loss_fn: Callable[[DataBatchFloat,
@@ -86,7 +89,7 @@ class AETrainingModule(TrainingModuleBase[Autoencoder]):
         output_batch = self(input_batch, map_to_expected=False)
         reconstruction_loss = self.reconstruction_loss_fn(output_batch, input_batch)
 
-        # the below just for show :) the loss above is sufficient for training!
+        # the below is just for show :) the loss above is sufficient for training!
         # this only becomes relevant once we want to link reconstruction losses to data likelihoods!
         with torch.inference_mode():
             nll = self.model.likelihood.nll(output_batch, input_batch)
@@ -113,3 +116,24 @@ class AETrainingModule(TrainingModuleBase[Autoencoder]):
                  n_samples: int,
                  **kwargs):
         raise NotImplementedError("generate() not meaningful for autoencoder.")
+
+
+class AETrainingModule(AETrainingModuleBase[Autoencoder]):
+    """This class is required to keep a generic base module that others can inherit from.
+    
+    For example, `VAETrainingModule` can re-use parts of the autoencoder, so we want to keep it
+    generic. However, LightningCLI does not like generic classes, so we need this concrete
+    instantiation. See `AETrainingModuleBase` for notes.
+    """
+    @override
+    def __init__(self,
+                 model: Autoencoder,
+                 optimization_config: OptimizationConfig,
+                 scale_multiplier: float = 256.,
+                 reconstruction_loss_fn: Callable[[DataBatchFloat,
+                                                   DataBatchFloat],
+                                                   ScalarFloat] | None = None):
+        super().__init__(model,
+                         optimization_config,
+                         scale_multiplier,
+                         reconstruction_loss_fn)

@@ -211,11 +211,16 @@ class EncoderDecoder(nn.Module):
     @override
     def __init__(self,
                  config: EncoderDecoderConfig,
+                 latent_multiplier: int = 1,
                  output_multiplier: int = 1):
         """Configure and build the network.
 
         Parameters:
             config: `EncoderDecoderConfig` to configure the object.
+            latent_multiplier: Encoder output dimensionality is multiplied by this value. This is
+                necessary for VAEs, where we often need multiple values for each latent dimension
+                distribution (e.g. mean and variance for Gaussians). Note that the decoder still
+                expects `latent_dim` inputs, without multiplier.
             output_multiplier: Number of decoder output channels is multiplied by this value. This
                 is necessary for autoencoders using likelihoods that require multiple parameters,
                 for example a Beta distribution.
@@ -224,7 +229,7 @@ class EncoderDecoder(nn.Module):
         body_config = config.body_config
 
         enc_config = EncoderConfig(input_shape=config.input_shape,
-                                   out_dim=config.latent_dim,
+                                   out_dim=config.latent_dim * latent_multiplier,
                                    head_style=config.style,
                                    body_config=body_config,
                                    block_config=config.block_config)

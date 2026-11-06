@@ -19,15 +19,21 @@ class Autoencoder(EncoderDecoder):
     @override
     def __init__(self,
                  likelihood: Likelihood,
-                 enc_dec_config: EncoderDecoderConfig):
+                 enc_dec_config: EncoderDecoderConfig,
+                 latent_multiplier: int = 1):
         """Configure the module.
 
         Parameters:
             likelihood: The likelihood we assume for the data, which leads to a loss function
                 equivalent to maximum likelihood.
             enc_dec_config: `EncoderDecoderConfig` for the network.
+            latent_multiplier: Encoder output dimensionality is multiplied by this number from the
+                intended latent dimensionality. You generally **should not touch this**. It's mainly
+                here for interface reasons, as some derived classes will set this to a specific
+                value. I haven't found a better way to do this that isn't overly complicated.
         """
         super().__init__(config=enc_dec_config,
+                         latent_multiplier=latent_multiplier,
                          output_multiplier=likelihood.n_parameters)
         self.likelihood = likelihood
 
