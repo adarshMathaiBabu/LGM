@@ -57,7 +57,7 @@ class VAEGauss(VAE):
             "The sum_except function (already imported above!) should be helpful here.")
         # NOTE in case you are struggling with this one, you can leave it blank, and simply use
         # the sample-based approximate KL divergence from the base class.
-        return 0.5 * sum_except(means**2 - 1 + torch.exp(log_variances) - log_variances).mean()
+        return None
 
 
 class GaussianPosterior(PosteriorFamily):
