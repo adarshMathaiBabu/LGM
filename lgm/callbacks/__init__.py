@@ -9,4 +9,4 @@ As a rough guide:
 """
 from .image import GenerationLogging, ReconstructionLogging
 from .logging import FitInfo, HyperParamLogger
-from .saving import BestCheckpoint
+from .saving import BestCheckpoint, EMAModel

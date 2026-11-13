@@ -94,3 +94,20 @@ class AttentionBlock(nn.Module):
         # back to image shape
         outputs = channels_last_to_first(outputs).view(batch_size, n_channels, *spatial_dims)
         return self.residual_factor * (inputs + outputs)
+
+
+class SDLayer(nn.Module):
+    """Layer from "Progressive Growing of GANs" paper.
+    
+    Computes per-feature variances, summarizes to one global value via mean, and concatenates a
+    single feature with this value.
+    """
+    def forward(self,
+                inputs: DataBatchFloat) -> DataBatchFloat:
+        variances = torch.var(inputs, dim=0)
+        global_value = variances.mean()
+        broadcast_shape = torch.tensor(inputs.shape)
+        broadcast_shape[1] = 1
+        broadcast = global_value * torch.ones(*broadcast_shape, device=inputs.device)
+        return torch.cat([inputs, broadcast], dim=1)
+

@@ -31,6 +31,7 @@ class ConvBlockPrenorm(nn.Module):
                  current_filters: int,
                  config: BlockConfig,
                  stride: int = 1,
+                 skip_dim: int = 0,
                  use_attention: bool = False):
         """Configure the block and create sublayers.
 
@@ -39,6 +40,8 @@ class ConvBlockPrenorm(nn.Module):
             current_filters: Output channels.
             config: `BlockConfig` object to config the block.
             stride: Stride applied by the first convolution.
+            skip_dim: If this block is used in a level that takes skip inputs, this needs to be the
+                number of channels of the respective input.
             use_attention: If `True`, the residual block will be followed by an attention block.
 
         Raises:
@@ -55,7 +58,7 @@ class ConvBlockPrenorm(nn.Module):
         norm_fn = norm_selector(config.norm, data_format)
 
         use_bias = config.norm == "dummy"
-        input_dim = previous_filters
+        input_dim = previous_filters + skip_dim
 
         def first_layer(filters_: int,
                         kernel_size_: int) -> nn.Sequential:
@@ -159,7 +162,8 @@ class ConvBlockPrenorm(nn.Module):
 
     @override
     def forward(self,
-                inputs: DataBatchFloat) -> DataBatchFloat:
+                inputs: DataBatchFloat,
+                skip_inputs: DataBatchFloat | None = None) -> DataBatchFloat:
         """Apply the block.
         
         This computes features, adds them to the input if residual connection is desired, and
@@ -167,19 +171,23 @@ class ConvBlockPrenorm(nn.Module):
 
         Parameters:
             inputs: Input features to the block.
+            skip_inputs: Optional additional inputs that will be concatenated to `inputs`. Note that
+                they are NOT added to the outputs in case of residual connection. Block MUST be
+                configured with the correct `skip_dim`.
 
         Returns:
             Result of the block.
         """
         # TODO cleaner to separate attention away from residual block
-        features = self.residual_se(inputs)
+        features = self.residual_se(inputs, skip_inputs)
         if self.use_residual:
             return self.attention(self.residual_factor * (features + self.shortcut(inputs)))
         else:
             return self.attention(features)
 
     def residual_se(self,
-                    inputs: DataBatchFloat) -> DataBatchFloat:
+                    inputs: DataBatchFloat,
+                    skip_inputs: DataBatchFloat | None = None) -> DataBatchFloat:
         """Computes features for `forward()`.
         
         Parameters:
@@ -188,7 +196,9 @@ class ConvBlockPrenorm(nn.Module):
         Returns:
             Transformed features.
         """
-        features = inputs
+        full_inputs = torch.cat((inputs, skip_inputs), dim=1) if skip_inputs is not None else inputs
+            
+        features = full_inputs
         for layer in self.layers:
             features = layer(features)
         features = self.squeeze_excite(features)
