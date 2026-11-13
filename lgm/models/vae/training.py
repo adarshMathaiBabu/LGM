@@ -72,22 +72,16 @@ class VAETrainingModule(AETrainingModuleBase[VAE]):
         """
         input_batch, _ = batch
         parameters = self.model.encoding_parameters(input_batch)
-        raise NotImplementedError("What do we put in the decoder? It should be *samples* from the "
-            "posterior q(z|x). Note that the self.model object (the VAE) has a posterior attribute. "
-            "This one might have the correct function to do the sampling :)")
-        output_batch = self.model.decoder(None)
+        output_batch = self.model.decoder(
+            self.model.posterior.reparameterized_sample(parameters, self.samples_per_q))
 
         if self.samples_per_q > 1:
             # replicate target data, since we get multiple reconstructions for each input
             input_batch = torch.repeat_interleave(input_batch, self.samples_per_q, dim=0)
 
-
         reconstruction_loss = self.reconstruction_loss_fn(output_batch, input_batch)
         kl_loss = self.model.kl_divergence(parameters, self.samples_per_q)
-        raise NotImplementedError("What is the full VAE loss, based on reconstruction loss and KL"
-            "divergence? Remember to also implement the beta-VAE framework, as specified in the"
-            "assignment text.")
-        full_loss = None
+        full_loss = reconstruction_loss + self.beta * kl_loss
 
         # the below is just for show :) the loss above is sufficient for training!
         # it just tends to be a more interpretable rescaling of the loss above

@@ -50,14 +50,7 @@ class VAEGauss(VAE):
         to keep the interface consistent with the general version.
         """
         means, log_variances = parameters
-        raise NotImplementedError("For the Gaussian VAE, there is a special case for the "
-            "KL-divergence! See the notebook for the formula. Be mindful that we get the "
-            "log-variances above, and you need the actual variances (without log), as well. Be sure "
-            "to correctly *sum* over data dimensions, but *average* over the batch dimensions. "
-            "The sum_except function (already imported above!) should be helpful here.")
-        # NOTE in case you are struggling with this one, you can leave it blank, and simply use
-        # the sample-based approximate KL divergence from the base class.
-        return None
+        return 0.5 * sum_except(means**2 - 1 + torch.exp(log_variances) - log_variances).mean()
 
 
 class GaussianPosterior(PosteriorFamily):
@@ -84,9 +77,8 @@ class GaussianPosterior(PosteriorFamily):
             mean = torch.repeat_interleave(mean, samples_per_q, dim=0)
             stddev = torch.repeat_interleave(stddev, samples_per_q, dim=0)
 
-        raise NotImplementedError("How do we do the 'reparameterization trick' for a Normal "
-                                  "distribution?")
-        return None
+        epsilon = torch.randn_like(stddev)
+        return mean + stddev * epsilon
 
     @override
     def get_prior(self) -> Distribution:

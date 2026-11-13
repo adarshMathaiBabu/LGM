@@ -87,16 +87,9 @@ class VAE(Autoencoder):
             Tuple with one element per distribution parameter, each of shape
             `(batch, self.prior_dim)`.
         """
-        raise NotImplementedError("Whoops! We forgot to implement the encoder. The autoencoder has "
-            "a self.encoder attribute, so that could probably be of use here. However, it just "
-            "returns a bunch of numbers, and we need to separate the different parameters, e.g. "
-            "means and variances for a Gaussian q(z|x). Maybe we could SPLIT them somehow? Or turn "
-            "the outputs into multiple CHUNKs? If only torch had functions for that... NOTE that "
-            "the self.posterior object has an n_parameters field that could be useful to figure "
-            "out how many chunks we need!")
-        # keep in mind this function SHOULD NOT SAMPLE THE CODES!
-        # only return the *distribution parameters*! sampling is handled through the posterior object
-        return None
+        parameters = self.encoder(inputs)
+        split_parameters = torch.chunk(parameters, chunks=self.posterior.n_parameters, dim=1)
+        return split_parameters
 
     def sample_codes(self,
                      inputs: DataBatchFloat) -> TabularBatchFloat:
@@ -122,7 +115,9 @@ class VAE(Autoencoder):
         divergence based on parameters only. Thus we take new samples here just so that the function
         only requires `parameters` as input.
         """
-        posterior_samples = self.posterior.reparameterized_sample(parameters, samples_per_q)
+        parameters = tuple(torch.repeat_interleave(param, repeats=samples_per_q, dim=0)
+                           for param in parameters)
+        posterior_samples = self.posterior.reparameterized_sample(parameters)
         posterior_distribution = self.posterior.from_parameters(parameters)
         return sum_except(posterior_distribution.log_prob(posterior_samples)
                           - self.prior.log_prob(posterior_samples)).mean()
@@ -138,10 +133,7 @@ class VAE(Autoencoder):
             Batch of generated samples.
         """
         device = next(self.parameters()).device
-        raise NotImplementedError("How do we sample from a VAE? I suppose we need to get samples "
-            "from the prior and put them into the decoder... Note that the VAE has a self.prior_dim "
-            "attribute to keep track of the latent space size!")
-        codes = None
+        codes = self.prior.sample((n_samples, self.prior_dim)).to(device)
         return self.expected_value(self.decoder(codes))
 
 
