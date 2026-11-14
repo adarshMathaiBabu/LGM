@@ -70,7 +70,8 @@ class ConvBlockPrenorm(nn.Module):
                                   conv_fn_(in_channels=input_dim,
                                            out_channels=filters_,
                                            kernel_size=kernel_size_,
-                                           bias=use_bias, padding="same"))
+                                           bias=use_bias,
+                                           padding="same"))
             if stride > 1:
                 layer.append(DownsampleAA(scale_factor=stride,
                                           mode=INTERPOLATION_MAP[data_format]))
@@ -99,7 +100,8 @@ class ConvBlockPrenorm(nn.Module):
                 self.layers.append(conv_fn(in_channels=bottleneck_filters,
                                            out_channels=bottleneck_filters,
                                            kernel_size=config.kernel_size,
-                                           bias=use_bias, padding="same"))
+                                           bias=use_bias,
+                                           padding="same"))
 
             self.layers.append(norm_fn(norm_groups, bottleneck_filters))
             self.layers.append(config.activation())
@@ -107,7 +109,8 @@ class ConvBlockPrenorm(nn.Module):
             self.layers.append(last_conv(in_channels=bottleneck_filters,
                                          out_channels=current_filters,
                                          kernel_size=bottleneck_kernel_size,
-                                         bias=use_bias, padding="same"))
+                                         bias=use_bias,
+                                         padding="same"))
 
         if config.use_residual:
             if config.force_1x1 or previous_filters != current_filters or stride > 1:

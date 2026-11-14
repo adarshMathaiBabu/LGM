@@ -99,7 +99,7 @@ class CNNLevel(nn.Module):
             all_level_outputs = []
         for ind, block in enumerate(self.blocks):
             skip_input = None if skip_inputs is None else skip_inputs[ind]
-            outputs = block(outputs, skip_input)
+            outputs = block(outputs, skip_inputs=skip_input)
             if self.return_all:
                 all_level_outputs.append(outputs)
             

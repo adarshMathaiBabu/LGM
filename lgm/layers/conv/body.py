@@ -144,10 +144,10 @@ class CNNBody(nn.Module):
             level_inputs = outputs  # save for residual
 
             if self.return_all:
-                outputs, all_block_outputs = level(outputs, skip_input)
+                outputs, all_block_outputs = level(outputs, skip_inputs=skip_input)
                 all_level_outputs.append(all_block_outputs)
             else:
-                outputs = level(outputs, skip_input)
+                outputs = level(outputs, skip_inputs=skip_input)
 
             if self.interpolators is not None:
                 outputs = self.residual_factor * (outputs + self.interpolators[ind](level_inputs))
