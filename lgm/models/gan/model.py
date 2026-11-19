@@ -41,8 +41,8 @@ class Generator(DecoderNet):
 
     def generate(self,
                  n_samples: int) -> DataBatchFloat:
-        raise NotImplementedError("How do GANs sample new data?")
-        return None
+        return self(self.sample_noise(n_samples))
+        
 
     def sample_noise(self,
                      n_samples: int) -> TabularBatchFloat:

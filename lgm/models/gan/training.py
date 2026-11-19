@@ -95,10 +95,8 @@ class GANTrainingModuleParallel(GANTrainingModuleBase):
                   batch_index: int) -> tuple[ScalarFloat, ScalarFloat]:
         input_batch, _ = batch
 
-        raise NotImplementedError("How do we generate a batch of samples? You should get "
-            "batch_size samples to get the same size as the real data batch.")
         # bonus question, compare to the sequential module below. why are we NOT using no_grad here?
-        generated_batch =  None
+        generated_batch = self.model.generate(input_batch.shape[0])
         generated_batch = self.dequantizer(generated_batch)
         input_batch = self.dequantizer(input_batch)
 
@@ -106,16 +104,10 @@ class GANTrainingModuleParallel(GANTrainingModuleBase):
         full_batch = torch.cat((input_batch, generated_batch))
         d_output, features = self.model.discriminator(full_batch)
 
-        raise NotImplementedError("You need to create labels! We need 1s for the real data, and "
-            "0s for the generated data. Note that if you want to implement label-smoothing (as )"
-            "detailed in the notebook), this is also done here. Finally be mindful to put the "
-            "tensors on the correct device.")
-        real_labels = None
-        fake_labels = None
+        real_labels = torch.full((batch_size, 1), self.label_mult, device=input_batch.device)
+        fake_labels = torch.zeros((batch_size, 1), device=input_batch.device)
         full_labels = torch.cat((real_labels, fake_labels))
-        raise NotImplementedError("Labels again! But be careful, this time they should be all 1s, "
-            "because this is about G 'tricking' D!")
-        fool_labels = None
+        fool_labels = torch.ones(batch_size, 1, device=input_batch.device)
 
         d_loss = self.loss_fn(d_output, full_labels)
         g_loss = self.loss_fn(d_output[batch_size:], fool_labels)
@@ -127,10 +119,7 @@ class GANTrainingModuleParallel(GANTrainingModuleBase):
             features_flat = [feature for level_feature in features for feature in level_feature]
             for feature in features_flat:
                 real_feature, fake_feature = torch.chunk(feature, 2, dim=0)
-                raise NotImplementedError("Hm, okay, for feature matching we need the difference "
-                    "between average real and generated features. NOT average difference of "
-                    "features!")
-                feature_difference = None
+                feature_difference = real_feature.mean(dim=0) - fake_feature.mean(dim=0)
                 feature_match_loss += (feature_difference**2).mean()
             generator_loss_full = g_loss + self.feature_matching * feature_match_loss
             metrics["feature_matching_loss"] = feature_match_loss
@@ -150,8 +139,6 @@ class GANTrainingModuleParallel(GANTrainingModuleBase):
         optimizer = self.optimizers()
         scheduler = self.lr_schedulers()
         optimizer.zero_grad()
-        raise ValueError("Hello! Nothing to implement here, but bonus question: What is the "
-            "purpose of retain_graph=True? Why is it necessary here?")
         self.manual_backward(d_loss, inputs=list(self.model.discriminator.parameters()),
                              retain_graph=True)
         self.manual_backward(g_loss, inputs=list(self.model.generator.parameters()))
@@ -185,8 +172,6 @@ class GANTrainingModuleSequential(GANTrainingModuleBase):
         # train D
         # don't need to toggle_optimizer since we wrap G in no_grad
         with torch.no_grad():
-            raise NotImplementedError("How do we generate a batch of samples? You should get "
-                "batch_size samples to get the same size as the real data batch.")
             # bonus question, why are we using no_grad?
             generated_batch = None
             generated_batch = self.dequantizer(generated_batch)
@@ -194,11 +179,6 @@ class GANTrainingModuleSequential(GANTrainingModuleBase):
         
         full_batch = torch.cat((input_batch, generated_batch))
         d_output, _ = self.model.discriminator(full_batch)
-
-        raise NotImplementedError("You need to create labels! We need 1s for the real data, and "
-            "0s for the generated data. Note that if you want to implement label-smoothing (as )"
-            "detailed in the notebook), this is also done here. Finally be mindful to put the "
-            "tensors on the correct device.")
         real_labels = None
         fake_labels = None
         full_labels = torch.cat((real_labels, fake_labels))
@@ -216,8 +196,6 @@ class GANTrainingModuleSequential(GANTrainingModuleBase):
         generated_batch2 = self.dequantizer(generated_batch2)
         full_batch2 = torch.cat((input_batch, generated_batch2))
         d_output2, features = self.model.discriminator(full_batch2)
-        raise NotImplementedError("Labels again! But be careful, this time they should be all 1s, "
-            "because this is about G 'tricking' D!")
         fool_labels = None
 
         g_loss = self.loss_fn(d_output2[batch_size:], fool_labels)
@@ -229,9 +207,6 @@ class GANTrainingModuleSequential(GANTrainingModuleBase):
             features_flat = [feature for level_feature in features for feature in level_feature]
             for feature in features_flat:
                 real_feature, fake_feature = torch.chunk(feature, 2, dim=0)
-                raise NotImplementedError("Hm, okay, for feature matching we need the difference "
-                    "between average real and generated features. NOT average difference of "
-                    "features!")
                 feature_difference = None
                 feature_match_loss += (feature_difference**2).mean()
             generator_loss_full = g_loss + self.feature_matching * feature_match_loss
@@ -240,8 +215,6 @@ class GANTrainingModuleSequential(GANTrainingModuleBase):
             generator_loss_full = g_loss
 
         if tag == "train":
-            raise NotImplementedError("Train G! Should be easy given how D is trained above. Be "
-                "sure to use the *full* loss including feature matching.")
             pass
         self.untoggle_optimizer(g_optimizer)
         self.log_metrics(tag, metrics)
