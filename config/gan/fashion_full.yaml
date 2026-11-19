@@ -136,10 +136,10 @@ data:
   init_args:
     dataset: "fashion"
     batch_size: 128
-    num_workers: 12
+    num_workers: 2
 
 # CRITICAL compile is set to true here, for debugging or if it just doesn't work for you, turn it off!
-compile: true
+compile: false
 matmul_high: true
 ckpt_path: null
 weights_only: null
