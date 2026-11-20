@@ -47,11 +47,8 @@ Thumbs.db
 *.mat
 *.webp
 
-*-checkpoint*
 *.pyc
 *-ubyte
-lightning_logs/*
-
 data/*
 dump/*
 logs/*

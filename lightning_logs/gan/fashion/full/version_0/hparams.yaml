@@ -1,0 +1,135 @@
+model:
+  class_path: lgm.models.gan.GAN
+  init_args:
+    discriminator:
+      class_path: lgm.models.gan.Discriminator
+      init_args:
+        config:
+          input_shape:
+          - 1
+          - 32
+          - 32
+          out_dim: 1
+          head_style: pool-fc
+          body_config:
+            blocks_per_level:
+            - 2
+            - 2
+            - 1
+            level_filters:
+            - 32
+            - 64
+            - 128
+            level_strides: null
+            level_attentions: null
+            final_normact: true
+            level_residual: false
+          block_config:
+            data_format: 2d
+            n_layers: 2
+            kernel_size: 3
+            activation: torch.nn.Mish
+            bottleneck_factor: 1
+            depthwise: false
+            norm: group
+            norm_groups: 16
+            use_residual: true
+            force_1x1: false
+            rescale_residual: false
+            zero_init: false
+            use_se: true
+            se_reduction_factor: 8
+            se_bias: 2.0
+            dropout: 0.0
+          input_skips: false
+          return_all: true
+          global_dropout: 0.0
+        sd_layer: true
+    generator:
+      class_path: lgm.models.gan.Generator
+      init_args:
+        config:
+          input_shape:
+          - 1
+          - 32
+          - 32
+          latent_dim: 64
+          root_style: fc
+          body_config:
+            blocks_per_level:
+            - 1
+            - 1
+            - 2
+            - 2
+            level_filters:
+            - 256
+            - 128
+            - 64
+            - 32
+            level_strides:
+            - 2
+            - 2
+            - 2
+            - 1
+            level_attentions: null
+            final_normact: true
+            level_residual: false
+          block_config:
+            data_format: 2d
+            n_layers: 2
+            kernel_size: 3
+            activation: torch.nn.Mish
+            bottleneck_factor: 1
+            depthwise: false
+            norm: batch
+            norm_groups: null
+            use_residual: true
+            force_1x1: false
+            rescale_residual: false
+            zero_init: false
+            use_se: true
+            se_reduction_factor: 8
+            se_bias: 2.0
+            dropout: 0.0
+          output_skips: false
+        noise_distribution:
+          class_path: torch.distributions.Normal
+          init_args:
+            loc: 0.0
+            scale: 1.0
+            validate_args: null
+optimization_config:
+  optimizer:
+    class_path: lgm.optimizers.AdamWConfig
+    init_args:
+      lr: 0.0002
+      weight_decay: 0.0
+      betas:
+      - 0.5
+      - 0.999
+      eps: 1.0e-08
+      amsgrad: false
+  scheduler:
+    class_path: lgm.optimizers.CosineWarmupConfig
+    init_args:
+      warmup_fraction: 0.05
+d_loss_fn:
+  class_path: torch.nn.MSELoss
+  init_args:
+    size_average: null
+    reduce: null
+    reduction: mean
+feature_matching: 10.0
+label_smoothing: 0.0
+_instantiator: lightning.pytorch.cli.instantiate_module
+dataset: fashion
+batch_size: 128
+num_workers: 2
+persistent_workers: true
+root: data
+resize: null
+normalize: null
+augment_transforms: null
+additional_transforms: null
+no_flip: false
+cutmixup: null
