@@ -11,7 +11,8 @@ def optimization_inference(target_data: DataBatchFloat,
                            generator: Generator,
                            n_steps: int,
                            plotter: ImagePlotter,
-                           regularization: float = 0.) -> TabularBatchFloat:
+                           regularization: float = 0.,
+                           model_name: str = "") -> TabularBatchFloat:
     """Do inference via optimization for GANs.
     
     This means that given some target data, we try to find points in the latent space that, once
@@ -23,6 +24,7 @@ def optimization_inference(target_data: DataBatchFloat,
         generator: GAN generator.
         n_steps: Number of gradient steps we take for optimization.
         plotter: `ImagePlotter` object to plot the optimized images.
+        model_name: Shown in each plot title so runs can be told apart.
         regularization: There is no guarantee that the optimized noise actually represents good
             samples from the noise function. If the true noise is standard normal, we can infer the
             expected norm of a sample. Using this, we can quantify the difference between that norm
@@ -55,7 +57,10 @@ def optimization_inference(target_data: DataBatchFloat,
         if not step % (n_steps // 10):
             n_rows = 8  # TODO don't harcode
             combined = interleave(target_data[:n_rows**2 // 2], outputs[:n_rows**2 // 2])
+            title = f"After Step {step + 1}, diff {diff.item():.5f}"
+            if model_name:
+                title = f"{model_name} — {title}"
             plotter.image_grid(combined,
-                               title=f"After Step {step + 1}, diff {diff.item():.5f}",
+                               title=title,
                                n_rows=n_rows)
     return optimized_noise.detach()
